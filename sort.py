@@ -24,6 +24,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from skimage import io
+from scipy.spatial.distance import cosine
 
 import glob
 import time
@@ -123,6 +124,7 @@ class KalmanBoxTracker(object):
     self.hits = 0
     self.hit_streak = 0
     self.age = 0
+    self.embeddings = bbox[5:133]
 
   def update(self,bbox):
     """
@@ -133,6 +135,8 @@ class KalmanBoxTracker(object):
     self.hits += 1
     self.hit_streak += 1
     self.kf.update(convert_bbox_to_z(bbox))
+    print('{}: updated with similarity {}'.format(self.id, (1 - cosine(self.embeddings, bbox[5:133]))))
+    self.embeddings = bbox[5:133]
 
   def predict(self):
     """
@@ -167,7 +171,9 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
 
   for d,det in enumerate(detections):
     for t,trk in enumerate(trackers):
-      iou_matrix[d,t] = iou(det,trk)
+      similarity = (1 - cosine(det[5:133], trk[5:133]))
+      iou_matrix[d,t] = iou(det,trk) * similarity
+      print('det {}, trk {}: similarity {}'.format(d, t, similarity))
 
   if min(iou_matrix.shape) > 0:
     a = (iou_matrix > iou_threshold).astype(np.int32)
@@ -224,12 +230,14 @@ class Sort(object):
     """
     self.frame_count += 1
     # get predicted locations from existing trackers.
-    trks = np.zeros((len(self.trackers), 5))
+    trks = np.zeros((len(self.trackers), 133))
     to_del = []
     ret = []
     for t, trk in enumerate(trks):
       pos = self.trackers[t].predict()[0]
-      trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
+      emb = self.trackers[t].embeddings
+      trk[:5] = [pos[0], pos[1], pos[2], pos[3], 0]
+      trk[5:133] = emb
       if np.any(np.isnan(pos)):
         to_del.append(t)
     trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
