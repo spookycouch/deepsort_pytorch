@@ -32,15 +32,14 @@ class DeepAppearance:
 
         # separate detections into batches
         batches = []
-        batches.append([])
-        index = 0
+        index = -1
 
         for i, detection in enumerate(detections):
-            batches[index].append(detection)
-
-            if (i + 1) % batch_size == 0:
+            if i % batch_size == 0:
                 batches.append([])
                 index += 1
+            
+            batches[index].append(detection)
 
         # get embeddings
         embeddings_out = []

@@ -31,6 +31,9 @@ import time
 import argparse
 from filterpy.kalman import KalmanFilter
 
+from PIL import Image
+from deep_appearance_torch import DeepAppearance
+
 try:
   from numba import jit
 except:
@@ -135,7 +138,7 @@ class KalmanBoxTracker(object):
     self.hits += 1
     self.hit_streak += 1
     self.kf.update(convert_bbox_to_z(bbox))
-    print('{}: updated with similarity {}'.format(self.id, (1 - cosine(self.embeddings, bbox[5:133]))))
+    # print('{}: updated with similarity {}'.format(self.id, (1 - cosine(self.embeddings, bbox[5:133]))))
     self.embeddings = bbox[5:133]
 
   def predict(self):
@@ -173,7 +176,7 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
     for t,trk in enumerate(trackers):
       similarity = (1 - cosine(det[5:133], trk[5:133]))
       iou_matrix[d,t] = iou(det,trk) * similarity
-      print('det {}, trk {}: similarity {}'.format(d, t, similarity))
+      # print('det {}, trk {}: similarity {}'.format(d, t, similarity))
 
   if min(iou_matrix.shape) > 0:
     a = (iou_matrix > iou_threshold).astype(np.int32)
@@ -283,6 +286,7 @@ if __name__ == '__main__':
   total_time = 0.0
   total_frames = 0
   colours = np.random.rand(32, 3) #used only for display
+  deep_appearance = DeepAppearance()
   if(display):
     if not os.path.exists('mot_benchmark'):
       print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    (https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s /path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
@@ -307,13 +311,39 @@ if __name__ == '__main__':
         dets[:, 2:4] += dets[:, 0:2] #convert to [x1,y1,w,h] to [x1,y1,x2,y2]
         total_frames += 1
 
+        # get the embeddings
+        fn = 'mot_benchmark/%s/%s/img1/%06d.jpg'%(phase, seq, frame)
+        im =io.imread(fn)
+        H,W,C = im.shape
+        sort_detections = np.ones((len(dets), 133))
+        images = []
+
+        for detection in dets:
+          x1 = max(int(detection[0]), 0)
+          y1 = max(int(detection[1]), 0)
+          x2 = min(int(detection[2]), W)
+          y2 = min(int(detection[3]), H)
+          image = im[y1:y2, x1:x2, :]
+          image = np.flip(image, axis=2)
+          image = Image.fromarray(image)
+          images.append(image)
+        
+        start_time = time.time()
+        
+        if len(images) > 0:
+          embeddings = deep_appearance.predict_embeddings(images)
+        
+        for i, sd in enumerate(sort_detections):
+          sd[:5] = dets[i]
+          sd[5:133] = embeddings[i]
+        
+        dets = sort_detections
+
         if(display):
-          fn = 'mot_benchmark/%s/%s/img1/%06d.jpg'%(phase, seq, frame)
-          im =io.imread(fn)
+
           ax1.imshow(im)
           plt.title(seq + ' Tracked Targets')
 
-        start_time = time.time()
         trackers = mot_tracker.update(dets)
         cycle_time = time.time() - start_time
         total_time += cycle_time
