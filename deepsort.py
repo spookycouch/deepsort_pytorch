@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 
 from sort import Sort
-
+from deep_appearance import DeepAppearance
 
 class DeepSort():
     """

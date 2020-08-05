@@ -13,7 +13,7 @@ import glob
 import time
 import argparse
 
-from deep_appearance_torch import DeepAppearance, DeepSort
+from deepsort import DeepSort
 
 
 def parse_args():
@@ -25,7 +25,6 @@ def parse_args():
   args = parser.parse_args()
   return args
 
-
 # all train
 args = parse_args()
 display = args.display
@@ -33,16 +32,6 @@ phase = args.phase
 total_time = 0.0
 total_frames = 0
 colours = np.random.rand(32, 3) #used only for display
-deep_appearance = DeepAppearance()
-
-# all train
-args = parse_args()
-display = args.display
-phase = args.phase
-total_time = 0.0
-total_frames = 0
-colours = np.random.rand(32, 3) #used only for display
-deep_appearance = DeepAppearance()
 
 if(display):
   if not os.path.exists('mot_benchmark'):
