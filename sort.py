@@ -24,13 +24,13 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from skimage import io
-from scipy.spatial.distance import cosine
 
 import glob
 import time
 import argparse
 from filterpy.kalman import KalmanFilter
 
+from scipy.spatial.distance import cosine
 from PIL import Image
 from deep_appearance_torch import DeepAppearance
 
@@ -104,7 +104,7 @@ class KalmanBoxTracker(object):
   This class represents the internal state of individual tracked objects observed as bbox.
   """
   count = 0
-  def __init__(self,bbox):
+  def __init__(self,bbox,embeddings):
     """
     Initialises a tracker using initial bounding box.
     """
@@ -127,9 +127,9 @@ class KalmanBoxTracker(object):
     self.hits = 0
     self.hit_streak = 0
     self.age = 0
-    self.embeddings = bbox[5:133]
+    self.embeddings = [embeddings]
 
-  def update(self,bbox):
+  def update(self,bbox,embeddings):
     """
     Updates the state vector with observed bbox.
     """
@@ -138,8 +138,9 @@ class KalmanBoxTracker(object):
     self.hits += 1
     self.hit_streak += 1
     self.kf.update(convert_bbox_to_z(bbox))
-    # print('{}: updated with similarity {}'.format(self.id, (1 - cosine(self.embeddings, bbox[5:133]))))
-    self.embeddings = bbox[5:133]
+    self.embeddings.append(embeddings)
+    if len(self.embeddings) > 100:
+      self.embeddings.pop(0)
 
   def predict(self):
     """
@@ -162,7 +163,7 @@ class KalmanBoxTracker(object):
     return convert_x_to_bbox(self.kf.x)
 
 
-def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
+def associate_detections_to_trackers(detections,trackers,det_embeddings,trk_embeddings,iou_threshold = 0.8):
   """
   Assigns detections to tracked object (both represented as bounding boxes)
 
@@ -174,9 +175,14 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
 
   for d,det in enumerate(detections):
     for t,trk in enumerate(trackers):
-      similarity = (1 - cosine(det[5:133], trk[5:133]))
-      iou_matrix[d,t] = iou(det,trk) * similarity
-      # print('det {}, trk {}: similarity {}'.format(d, t, similarity))
+      
+      # use cosine distance as a heuristic
+      min_dist = 2
+      for trk_embedding in trk_embeddings[t]:
+        min_dist = min(min_dist, cosine(det_embeddings[d], trk_embedding))
+      
+      similarity = 1 - min_dist
+      iou_matrix[d,t] = iou(det,trk) + similarity
 
   if min(iou_matrix.shape) > 0:
     a = (iou_matrix > iou_threshold).astype(np.int32)
@@ -213,7 +219,7 @@ def associate_detections_to_trackers(detections,trackers,iou_threshold = 0.3):
 
 
 class Sort(object):
-  def __init__(self, max_age=1, min_hits=3):
+  def __init__(self, max_age=30, min_hits=3):
     """
     Sets key parameters for SORT
     """
@@ -222,7 +228,7 @@ class Sort(object):
     self.trackers = []
     self.frame_count = 0
 
-  def update(self, dets=np.empty((0, 5))):
+  def update(self, dets=np.empty((0, 5)), det_embs=[]):
     """
     Params:
       dets - a numpy array of detections in the format [[x1,y1,x2,y2,score],[x1,y1,x2,y2,score],...]
@@ -233,28 +239,28 @@ class Sort(object):
     """
     self.frame_count += 1
     # get predicted locations from existing trackers.
-    trks = np.zeros((len(self.trackers), 133))
+    trks = np.zeros((len(self.trackers), 5))
     to_del = []
     ret = []
+    trk_embs = []
     for t, trk in enumerate(trks):
       pos = self.trackers[t].predict()[0]
-      emb = self.trackers[t].embeddings
-      trk[:5] = [pos[0], pos[1], pos[2], pos[3], 0]
-      trk[5:133] = emb
+      trk[:] = [pos[0], pos[1], pos[2], pos[3], 0]
+      trk_embs.append(self.trackers[t].embeddings)
       if np.any(np.isnan(pos)):
         to_del.append(t)
     trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
     for t in reversed(to_del):
       self.trackers.pop(t)
-    matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks)
+    matched, unmatched_dets, unmatched_trks = associate_detections_to_trackers(dets,trks,det_embs,trk_embs,1.0)
 
     # update matched trackers with assigned detections
     for m in matched:
-      self.trackers[m[1]].update(dets[m[0], :])
+      self.trackers[m[1]].update(dets[m[0], :], det_embs[m[0]])
 
     # create and initialise new trackers for unmatched detections
     for i in unmatched_dets:
-        trk = KalmanBoxTracker(dets[i,:])
+        trk = KalmanBoxTracker(dets[i,:], det_embs[i])
         self.trackers.append(trk)
     i = len(self.trackers)
     for trk in reversed(self.trackers):
@@ -287,6 +293,7 @@ if __name__ == '__main__':
   total_frames = 0
   colours = np.random.rand(32, 3) #used only for display
   deep_appearance = DeepAppearance()
+
   if(display):
     if not os.path.exists('mot_benchmark'):
       print('\n\tERROR: mot_benchmark link not found!\n\n    Create a symbolic link to the MOT benchmark\n    (https://motchallenge.net/data/2D_MOT_2015/#download). E.g.:\n\n    $ ln -s /path/to/MOT2015_challenge/2DMOT2015 mot_benchmark\n\n')
@@ -311,11 +318,9 @@ if __name__ == '__main__':
         dets[:, 2:4] += dets[:, 0:2] #convert to [x1,y1,w,h] to [x1,y1,x2,y2]
         total_frames += 1
 
-        # get the embeddings
         fn = 'mot_benchmark/%s/%s/img1/%06d.jpg'%(phase, seq, frame)
         im =io.imread(fn)
         H,W,C = im.shape
-        sort_detections = np.ones((len(dets), 133))
         images = []
 
         for detection in dets:
@@ -328,23 +333,16 @@ if __name__ == '__main__':
           image = Image.fromarray(image)
           images.append(image)
         
-        start_time = time.time()
-        
         if len(images) > 0:
-          embeddings = deep_appearance.predict_embeddings(images)
-        
-        for i, sd in enumerate(sort_detections):
-          sd[:5] = dets[i]
-          sd[5:133] = embeddings[i]
-        
-        dets = sort_detections
+          embs = deep_appearance.predict_embeddings(images)
 
         if(display):
 
           ax1.imshow(im)
           plt.title(seq + ' Tracked Targets')
 
-        trackers = mot_tracker.update(dets)
+        start_time = time.time()
+        trackers = mot_tracker.update(dets, embs)
         cycle_time = time.time() - start_time
         total_time += cycle_time
 
