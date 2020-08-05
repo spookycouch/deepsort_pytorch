@@ -1,0 +1,3 @@
+[submodule "fullbodynet"]
+	path = fullbodynet
+	url = git@gitlab.com:joejeffcock/fullbodynet.git

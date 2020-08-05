@@ -1,3 +1,7 @@
+## Weights
+
+Download at: https://leeds365-my.sharepoint.com/:f:/g/personal/sc18j3j_leeds_ac_uk/EoD0zTa-R4xOo5OBoveM6PsBHthDbDxDPHQG3tJPT2GUqA?e=HqnNl1
+
 ## Results
 
 Both the original SORT algorithm and the added deep appearance metric were tested using max_age=30 on the 2DMOT2015 benchmark, with the results tabulated below.
