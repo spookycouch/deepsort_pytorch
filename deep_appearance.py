@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torchvision.transforms as transforms
 
@@ -13,7 +15,7 @@ class DeepAppearance:
             self.device = 'cpu'
         
         net = FullBodyNet()
-        net.load_state_dict(torch.load('./mars_triplet_500.pth'))
+        net.load_state_dict(torch.load(os.path.dirname(os.path.abspath(__file__)) + '/mars_triplet_500.pth'))
         net.to(self.device)
         net.eval()
         self.net = net
