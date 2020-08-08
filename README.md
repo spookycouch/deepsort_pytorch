@@ -1,3 +1,10 @@
+## Installation
+
+    git clone --recursive git@gitlab.com:joejeffcock/deepsort_pytorch.git
+    pip install torch torchvision future numpy filterpy pillow
+
+Download the weights and place them in the root folder `deepsort_pytorch`
+
 ## Weights
 
 Download at: https://leeds365-my.sharepoint.com/:f:/g/personal/sc18j3j_leeds_ac_uk/EoD0zTa-R4xOo5OBoveM6PsBHthDbDxDPHQG3tJPT2GUqA?e=HqnNl1
@@ -41,3 +48,15 @@ ID switching was reduced by approximately 23% as a result of the deep appearance
 |KITTI-17      |72.2%|85.3%|62.7%|67.3%|91.6%|  9|  2|  7|  0|  42|  223|  8|   17|60.0%|0.277|  3|  5|  1|
 |ETH-Bahnhof   |56.3%|60.5%|52.6%|65.2%|75.0%|171| 47| 71| 53|1179| 1887| 65|  172|42.2%|0.260| 83| 29| 60|
 |OVERALL       |50.8%|60.5%|43.7%|56.6%|78.2%|500|118|250|132|6266|17311|399| 1088|39.8%|0.273|251|207|115|
+
+## Webcam test
+### Requirements
+
+- OpenCV minimum version 4.0.0
+- YOLOv3 COCO .weights, .cfg and classes.txt from https://pjreddie.com/darknet/yolo/
+
+### Setup
+    cd webcam-test
+    mkdir YOLOv3
+    cd YOLOv3
+    ln -s <path to yolov3.weights, yolov3.cfg, classes.txt>/* ./
