@@ -2,6 +2,7 @@
 
     git clone --recursive git@gitlab.com:joejeffcock/deepsort_pytorch.git
     pip install torch torchvision future numpy filterpy pillow
+    apt-get install python-skimage
 
 Download the weights and place them in the root folder `deepsort_pytorch`
 
