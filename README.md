@@ -10,11 +10,13 @@ Download the weights and place them in the root folder `deepsort_pytorch`
 
 Download at: https://leeds365-my.sharepoint.com/:f:/g/personal/sc18j3j_leeds_ac_uk/EoD0zTa-R4xOo5OBoveM6PsBHthDbDxDPHQG3tJPT2GUqA?e=HqnNl1
 
+ONNX model included for use with OpenCV DNN.
+
 ## Results
 
 Both the original SORT algorithm and the added deep appearance metric were tested using max_age=30 on the 2DMOT2015 benchmark, with the results tabulated below.
 
-ID switching was reduced by approximately 26% as a result of the deep appearance metric, along with a slight increase in accuracy and precision.
+ID switching was reduced by approximately 30% as a result of the deep appearance metric, along with a slight increase in accuracy and precision.
 
 ### Original SORT algorithm results
 
@@ -37,18 +39,18 @@ ID switching was reduced by approximately 26% as a result of the deep appearance
 
 |              | IDF1|  IDP|  IDR| Rcll| Prcn| GT| MT| PT| ML|  FP|   FN|IDs|   FM| MOTA| MOTP|IDt|IDa|IDm|
 | ---          | --- | --- | --- | --- | --- |---|---|---|---| ---| --- |---| --- | --- | --- |---|---|---|
-|ADL-Rundle-6  |47.8%|55.4%|42.0%|57.5%|75.7%| 24|  6| 16|  2| 925| 2131| 46|  106|38.1%|0.251| 25| 21|  4|
-|ETH-Sunnyday  |75.9%|76.7%|75.0%|79.2%|81.0%| 30| 12| 15|  3| 346|  387| 11|   52|60.0%|0.258|  6|  7|  3|
-|TUD-Campus    |75.3%|89.6%|64.9%|68.2%|94.2%|  8|  4|  4|  0|  15|  114|  1|   15|63.8%|0.261|  1|  1|  1|
-|ADL-Rundle-8  |37.1%|50.1%|29.5%|44.9%|76.2%| 28|  8| 14|  6| 952| 3738| 72|  236|29.8%|0.291| 22| 50|  8|
-|PETS09-S2L1   |52.5%|56.6%|49.0%|75.7%|87.4%| 19|  9| 10|  0| 488| 1088| 63|  196|63.4%|0.322| 20| 33|  1|
-|TUD-Stadtmitte|79.9%|92.3%|70.5%|74.3%|97.3%| 10|  6|  4|  0|  24|  297|  9|   18|71.5%|0.248|  4|  5|  1|
-|KITTI-13      |46.4%|56.6%|39.3%|46.3%|66.7%| 42|  2| 31|  9| 165|  382| 18|   37|20.6%|0.329| 13| 11|  6|
-|Venice-2      |43.5%|54.6%|36.2%|43.0%|64.9%| 26|  8| 11|  7|1659| 4072| 33|  116|19.3%|0.266| 13| 21|  5|
-|ETH-Pedcross2 |55.9%|75.6%|44.3%|52.0%|88.7%|133| 17| 60| 56| 415| 3008| 64|  133|44.3%|0.256| 49| 27| 23|
-|KITTI-17      |70.9%|83.8%|61.5%|67.3%|91.8%|  9|  2|  7|  0|  41|  223|  6|   15|60.5%|0.276|  3|  4|  1|
-|ETH-Bahnhof   |54.9%|59.2%|51.2%|65.7%|75.8%|171| 49| 66| 56|1133| 1857| 60|  165|43.7%|0.261| 82| 20| 56|
-|OVERALL       |51.3%|61.2%|44.1%|56.6%|78.5%|500|123|238|139|6163|17297|383| 1089|40.2%|0.273|238|200|109|
+|ADL-Rundle-6  |44.0%|50.9%|38.7%|57.6%|75.8%| 24|  6| 16|  2| 921| 2126| 46|  107|38.3%|0.251| 30| 17|  3|
+|ETH-Sunnyday  |76.0%|77.0%|75.1%|78.8%|80.8%| 30| 12| 15|  3| 348|  394| 12|   52|59.4%|0.258|  5|  9|  3|
+|TUD-Campus    |74.4%|88.8%|64.1%|67.4%|93.4%|  8|  3|  5|  0|  17|  117|  1|   16|62.4%|0.259|  1|  1|  1|
+|ADL-Rundle-8  |37.0%|49.5%|29.6%|45.0%|75.3%| 28|  9| 14|  5| 999| 3733| 72|  233|29.2%|0.289| 31| 39|  8|
+|PETS09-S2L1   |55.3%|59.3%|51.7%|76.0%|87.1%| 19|  9| 10|  0| 502| 1075| 56|  190|63.5%|0.322| 21| 27|  1|
+|TUD-Stadtmitte|78.1%|90.1%|68.9%|74.6%|97.4%| 10|  6|  4|  0|  23|  294|  8|   15|71.9%|0.248|  4|  5|  1|
+|KITTI-13      |52.1%|64.6%|43.7%|47.7%|70.5%| 42|  2| 32|  8| 140|  366|  8|   24|26.6%|0.324|  5|  7|  4|
+|Venice-2      |44.8%|56.2%|37.2%|42.8%|64.8%| 26|  8| 10|  8|1662| 4083| 32|  116|19.1%|0.265| 13| 20|  4|
+|ETH-Pedcross2 |57.7%|78.4%|45.7%|51.9%|89.0%|133| 16| 61| 56| 400| 3014| 66|  127|44.4%|0.253| 45| 30| 22|
+|KITTI-17      |73.3%|87.3%|63.3%|67.3%|92.9%|  9|  1|  8|  0|  35|  223|  7|   18|61.2%|0.280|  4|  3|  1|
+|ETH-Bahnhof   |55.5%|60.1%|51.7%|64.9%|75.4%|171| 52| 67| 52|1144| 1900| 55|  165|42.8%|0.260| 74| 26| 53|
+|OVERALL       |51.7%|61.8%|44.5%|56.5%|78.4%|500|124|242|134|6191|17325|363| 1063|40.1%|0.273|233|184|101|
 
 ## Webcam test
 ### Requirements
